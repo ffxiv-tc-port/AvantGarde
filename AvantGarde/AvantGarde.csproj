@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="Dalamud.NET.Sdk/15.0.0">
+<Project Sdk="Dalamud.NET.Sdk/12.0.2">
     <PropertyGroup>
-        <Version>1.0.6</Version>
-        <PackageProjectUrl>https://github.com/NeNeppie/AvantGarde</PackageProjectUrl>
+        <Version>7.15.0.1</Version>
+        <PackageProjectUrl>https://github.com/Lother/AvantGarde</PackageProjectUrl>
         <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
         <IsPackable>false</IsPackable>
-        <TargetFramework>net10.0-windows</TargetFramework>
+        <TargetFramework>net9.0-windows</TargetFramework>
     </PropertyGroup>
 </Project>

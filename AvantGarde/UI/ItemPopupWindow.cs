@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using System.Numerics;
-using Dalamud.Bindings.ImGui;
+using ImGuiNET;
 using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
@@ -83,7 +83,8 @@ public static class ItemPopupWindow
         agentChatLog->LinkedItem.ItemId = item.RowId;
         agentChatLog->LinkedItem.Quantity = 1;
         agentChatLog->LinkedItemName.SetString(item.Name.ExtractText());
-        agentChatLog->LinkedItem.LinkedItemQuality = item.Rarity;
+        // NOTE: InventoryItem.LinkedItemQuality doesn't exist in TC's FFXIVClientStructs
+        // generation (no equivalent field on this struct here); dropped.
 
         // 1096 is the ID for <item>
         agentChatLog->InsertTextCommandParam(1096, true);
@@ -95,7 +96,7 @@ public static class ItemPopupWindow
 
         if (icon.TryGetWrap(out var texture, out _))
         {
-            ImGui.Image(texture.Handle, size, Vector2.Zero, Vector2.One, Vector4.One);
+            ImGui.Image(texture.ImGuiHandle, size, Vector2.Zero, Vector2.One, Vector4.One);
         }
     }
 }

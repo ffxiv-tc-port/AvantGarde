@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using Dalamud.Bindings.ImGui;
+using ImGuiNET;
 using Dalamud.Interface.Textures;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
@@ -98,7 +98,7 @@ public class SlotWindow
         {
             if (icon is not null)
             {
-                ImGui.Image(icon.Handle, GuiUtilities.IconSize);
+                ImGui.Image(icon.ImGuiHandle, GuiUtilities.IconSize);
                 ImGui.SameLine();
             }
         }
