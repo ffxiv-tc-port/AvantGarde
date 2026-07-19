@@ -1,10 +1,10 @@
 {
-    "Author": "NeNeppie",
+    "Author": "NeNeppie, Lother",
     "Name": "Avant-Garde",
     "Punchline": "Displays a list of valid gear pieces beside hints in the Fashion Report minigame.",
     "Description": "This plugin is a crowdsourced project, aiming to provide a comprehensive list for all hint categories.\nSee the github page for information on how you can contribute.",
     "InternalName": "AvantGarde",
-    "RepoUrl": "https://github.com/NeNeppie/AvantGarde",
+    "RepoUrl": "https://github.com/Lother/AvantGarde",
     "Tags": ["Fashion report", "Glamour", "Gold saucer"],
     "CategoryTags": ["Utility", "UI"]
 }
