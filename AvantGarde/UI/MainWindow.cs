@@ -63,7 +63,7 @@ public unsafe class MainWindow
                 ImGui.SetCursorPos(ImGui.GetStyle().FramePadding);
                 try
                 {
-                    if (GuiUtilities.IconButton(FontAwesomeIcon.List, new Vector2(buttonSize), "顯示裝備"))
+                    if (GuiUtilities.IconButton(FontAwesomeIcon.List, new Vector2(buttonSize), "Show Gear".Loc()))
                     {
                         List<int>? itemIDs = [];
                         Service.DataManager.CategoryData.TryGetValue(GetCategoryID(slotCategory), out itemIDs);

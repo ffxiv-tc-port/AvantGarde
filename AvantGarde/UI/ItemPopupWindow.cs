@@ -39,27 +39,27 @@ public static class ItemPopupWindow
         ImGui.TextUnformatted(item.Name.ExtractText());
         ImGui.Separator();
 
-        ImGui.Text($"可裝備職業：{item.ClassJobCategory.Value.Name}");
+        ImGui.Text("Equippable by: ??".Loc(item.ClassJobCategory.Value.Name));
         ImGui.Spacing();
 
         DrawGameIcon(SourceTypeIconQuestionMark, GuiUtilities.IconSize);
         ImGui.SameLine();
-        ImGui.Text("來源未知！\n開發中...");
+        ImGui.Text("Unknown Source!\nWork In Progress...".Loc());
         ImGui.Spacing();
 
-        if (ImGui.Selectable("試穿"))
+        if (ImGui.Selectable("Try On".Loc()))
             AgentTryon.TryOn(0, item.RowId);
 
-        if (ImGui.Selectable("搜尋道具"))
+        if (ImGui.Selectable("Search Item".Loc()))
             ItemFinderModule.Instance()->SearchForItem(item.RowId, true);
 
-        if (ImGui.Selectable("連結"))
+        if (ImGui.Selectable("Link".Loc()))
             LinkItem(item);
 
-        if (ImGui.Selectable("複製名稱"))
+        if (ImGui.Selectable("Copy Name".Loc()))
             ImGui.SetClipboardText(item.Name.ExtractText());
 
-        if (ImGui.Selectable("在 Garland Tools 中開啟"))
+        if (ImGui.Selectable("Open in Garland Tools".Loc()))
             Process.Start(new ProcessStartInfo { FileName = $"https://garlandtools.org/db/#item/{item.RowId}", UseShellExecute = true });
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip($"https://garlandtools.org/db/#item/{item.RowId}");

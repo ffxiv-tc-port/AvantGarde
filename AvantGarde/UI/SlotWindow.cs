@@ -68,9 +68,9 @@ public class SlotWindow
         {
             using (ImRaii.PushColor(ImGuiCol.Text, new Vector4(0.5f, 0.5f, 0.5f, 1f)))
             {
-                ImGui.TextWrapped("此分類可能是新增的，或目前資料庫中尚無資料。");
+                ImGui.TextWrapped("This category could be new, and/or is currently empty in the database.".Loc());
                 ImGui.Spacing();
-                ImGui.TextWrapped("若您願意協助貢獻，請參閱 GitHub 頁面以了解更多資訊。");
+                ImGui.TextWrapped("If you wish to help, see the github page for more information.".Loc());
             }
 
             ImGui.End();

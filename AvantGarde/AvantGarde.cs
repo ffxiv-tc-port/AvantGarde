@@ -13,6 +13,7 @@ namespace AvantGarde
         public Plugin(IDalamudPluginInterface pluginInterface)
         {
             pluginInterface.Create<Service>();
+            Localization.Init(pluginInterface.AssemblyLocation.DirectoryName);
             _mainWindow = new();
 
             Service.PluginInterface.UiBuilder.Draw += this.DrawUI;

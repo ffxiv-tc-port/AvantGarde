@@ -14,6 +14,9 @@
         <IsPackable>false</IsPackable>
         <TargetFramework>net9.0-windows</TargetFramework>
     </PropertyGroup>
+    <ItemGroup>
+        <Content Include="LanguageChineseTraditional.ini" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
     <Target Name="PersistBuildNumber" AfterTargets="Build">
         <WriteLinesToFile File="$(BuildNumberFile)" Lines="$(BuildNumber)" Overwrite="true" />
     </Target>
