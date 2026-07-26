@@ -6,6 +6,8 @@ using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using Lumina.Excel.Sheets;
 
+using AvantGarde.Data;
+using AvantGarde.Ipc;
 using AvantGarde.Utils;
 
 namespace AvantGarde.UI;
@@ -42,9 +44,7 @@ public static class ItemPopupWindow
         ImGui.Text("Equippable by: ??".Loc(item.ClassJobCategory.Value.Name));
         ImGui.Spacing();
 
-        DrawGameIcon(SourceTypeIconQuestionMark, GuiUtilities.IconSize);
-        ImGui.SameLine();
-        ImGui.Text("Unknown Source!\nWork In Progress...".Loc());
+        DrawAcquisitionSource(item);
         ImGui.Spacing();
 
         if (ImGui.Selectable("Try On".Loc()))
@@ -64,16 +64,42 @@ public static class ItemPopupWindow
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip($"https://garlandtools.org/db/#item/{item.RowId}");
 
-        // TODO: Possible item {EQUIPABLE GEAR} sources:
-        //      * Crafting
-        //      * Exchange (Special Shop - non-gil-currencies, raids tokens, tomestones, etc.)
-        //      * Gil Shops (Gridania/Uldah/Limsa etc.)
-        //      * Marketboard (e.g. old Starlight Celebration set)
-        //      * Desynth (e.g. rare fishing drops)
-        //      * Instance (Dungeon, Raid Coffers, AR, etc.) Drops
-        //      * Achievement Claim
-        //      * Retainer Ventures (Rare ARR gear exclusive to Ventures)
-        //      * Eureka & Bozja Lockboxes
+        if (ItemVendorLocationIpc.IsAvailable && ImGui.Selectable("Show in Item Vendor Location".Loc()))
+            ItemVendorLocationIpc.OpenResults(item.RowId);
+
+        // Not yet resolved by DrawAcquisitionSource (no known vendor/achievement/quest source
+        // via Item Vendor Location, and not craftable via Recipe): marketboard-only items
+        // (e.g. old Starlight Celebration sets), desynth drops, dungeon/raid/instance drops,
+        // and Eureka & Bozja lockboxes still fall back to "Unknown Source".
+    }
+
+    private static void DrawAcquisitionSource(Item item)
+    {
+        var source = AcquisitionSource.Resolve(item.RowId);
+        switch (source.Kind)
+        {
+            case AcquisitionSourceKind.Vendor:
+                DrawGameIcon(SourceTypeIconExchange, GuiUtilities.IconSize);
+                ImGui.SameLine();
+                ImGui.TextWrapped(source.ZoneName is not null
+                    ? "Available from a vendor near ??.".Loc(source.ZoneName)
+                    : "Available from a known source (achievement, quest, or shop).".Loc());
+                break;
+
+            case AcquisitionSourceKind.Craftable:
+                DrawGameIcon(SourceTypeIconCrafting, GuiUtilities.IconSize);
+                ImGui.SameLine();
+                ImGui.TextWrapped(source.JobAbbreviation is not null
+                    ? "Craftable by ??.".Loc(source.JobAbbreviation)
+                    : "Craftable.".Loc());
+                break;
+
+            default:
+                DrawGameIcon(SourceTypeIconQuestionMark, GuiUtilities.IconSize);
+                ImGui.SameLine();
+                ImGui.TextWrapped("Unknown Source!\nWork In Progress...".Loc());
+                break;
+        }
     }
 
     private static unsafe void LinkItem(Item item)
