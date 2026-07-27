@@ -13,11 +13,14 @@ public enum AcquisitionSourceKind
     Craftable,
 }
 
+public readonly record struct MapLocation(uint TerritoryId, uint MapId, float X, float Y);
+
 public readonly struct AcquisitionSourceInfo
 {
     public required AcquisitionSourceKind Kind { get; init; }
     public string? ZoneName { get; init; }
     public string? JobAbbreviation { get; init; }
+    public MapLocation? Location { get; init; }
 }
 
 // Best-effort "how do I get this" lookup. Vendor/achievement/quest/shop sources are deferred
@@ -40,8 +43,17 @@ public static class AcquisitionSource
     {
         if (ItemVendorLocationIpc.TryGetSource(itemId, out var vendors))
         {
-            var zoneName = vendors.Count > 0 ? GetZoneName(vendors.First().territory) : null;
-            return new AcquisitionSourceInfo { Kind = AcquisitionSourceKind.Vendor, ZoneName = zoneName };
+            string? zoneName = null;
+            MapLocation? location = null;
+            if (vendors.Count > 0)
+            {
+                var (_, territoryId, (x, y)) = vendors.First();
+                var territory = Service.DalamudDataManager.GetExcelSheet<TerritoryType>()!.GetRowOrDefault(territoryId);
+                zoneName = territory?.PlaceName.ValueNullable?.Name.ExtractText();
+                if (territory is not null)
+                    location = new MapLocation(territoryId, territory.Value.Map.RowId, x, y);
+            }
+            return new AcquisitionSourceInfo { Kind = AcquisitionSourceKind.Vendor, ZoneName = zoneName, Location = location };
         }
 
         if (CraftableItemToCraftType.TryGetValue(itemId, out var craftTypeRow))
@@ -51,11 +63,5 @@ public static class AcquisitionSource
         }
 
         return new AcquisitionSourceInfo { Kind = AcquisitionSourceKind.Unknown };
-    }
-
-    private static string? GetZoneName(uint territoryId)
-    {
-        var territory = Service.DalamudDataManager.GetExcelSheet<TerritoryType>()!.GetRowOrDefault(territoryId);
-        return territory?.PlaceName.ValueNullable?.Name.ExtractText();
     }
 }
