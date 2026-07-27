@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Numerics;
 using ImGuiNET;
+using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
@@ -84,6 +85,11 @@ public static class ItemPopupWindow
                 ImGui.TextWrapped(source.ZoneName is not null
                     ? "Available from a vendor near ??.".Loc(source.ZoneName)
                     : "Available from a known source (achievement, quest, or shop).".Loc());
+
+                if (source.Location is { } location && ImGui.Selectable("Show location on map".Loc()))
+                {
+                    Service.GameGui.OpenMapWithMapLink(new MapLinkPayload(location.TerritoryId, location.MapId, location.X, location.Y));
+                }
                 break;
 
             case AcquisitionSourceKind.Craftable:
