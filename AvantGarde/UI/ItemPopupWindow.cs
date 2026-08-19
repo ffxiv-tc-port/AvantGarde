@@ -51,8 +51,17 @@ public static class ItemPopupWindow
         if (ImGui.Selectable("Try On".Loc()))
             AgentTryon.TryOn(0, item.RowId);
 
+        // 🔴 ItemFinderModule.Instance() 是 CS 裡的**手寫**包裝
+        //    （`uiModule == null ? null : uiModule->GetItemFinderModule()`），不是產生器的
+        //    [StaticAddress] —— 它會合法回 null（UIModule 還沒建好時）。
+        //    SearchForItem 是原生成員函式，對 null 呼叫是攔不到的 AVE
+        //    （corrupted-state exception，try/catch 無效）。取不到就當這次點擊沒發生。
         if (ImGui.Selectable("Search Item".Loc()))
-            ItemFinderModule.Instance()->SearchForItem(item.RowId, true);
+        {
+            var itemFinderModule = ItemFinderModule.Instance();
+            if (itemFinderModule != null)
+                itemFinderModule->SearchForItem(item.RowId, true);
+        }
 
         if (ImGui.Selectable("Link".Loc()))
             LinkItem(item);
