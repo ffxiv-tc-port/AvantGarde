@@ -68,9 +68,9 @@ public class SlotWindow
         {
             using (ImRaii.PushColor(ImGuiCol.Text, new Vector4(0.5f, 0.5f, 0.5f, 1f)))
             {
-                ImGui.TextWrapped("This category could be new, and/or is currently empty in the database.");
+                ImGui.TextWrapped("This category could be new, and/or is currently empty in the database.".Loc());
                 ImGui.Spacing();
-                ImGui.TextWrapped("If you wish to help, see the github page for more information.");
+                ImGui.TextWrapped("If you wish to help, see the github page for more information.".Loc());
             }
 
             ImGui.End();
@@ -84,12 +84,22 @@ public class SlotWindow
 
     public static void DrawItem(Item item, bool showIDs, bool canInteract)
     {
+        var isOwned = OwnershipChecker.IsOwned(item.RowId);
+
+        using var ownedColor = ImRaii.PushColor(ImGuiCol.Header, new Vector4(0.20f, 0.55f, 0.20f, 0.55f), isOwned)
+                                    .Push(ImGuiCol.HeaderHovered, new Vector4(0.25f, 0.65f, 0.25f, 0.65f), isOwned)
+                                    .Push(ImGuiCol.HeaderActive, new Vector4(0.20f, 0.55f, 0.20f, 0.75f), isOwned);
+
         if (canInteract)
         {
-            if (ImGui.Selectable($"##avantgarde-popup-select-{item.RowId}", false, ImGuiSelectableFlags.None, new Vector2(GuiUtilities.SlotWindowSize.X, GuiUtilities.IconSize.Y))
+            if (ImGui.Selectable($"##avantgarde-popup-select-{item.RowId}", isOwned, ImGuiSelectableFlags.None, new Vector2(GuiUtilities.SlotWindowSize.X, GuiUtilities.IconSize.Y))
                 && (ImGui.IsMouseReleased(ImGuiMouseButton.Left) || ImGui.IsMouseReleased(ImGuiMouseButton.Right)))
             {
                 ImGui.OpenPopup($"##avantgarde-item-popup-{item.RowId}");
+            }
+            if (isOwned && ImGui.IsItemHovered())
+            {
+                ImGui.SetTooltip("Already in your possession.".Loc());
             }
             ImGui.SetCursorPosY(ImGui.GetCursorPosY() - GuiUtilities.IconSize.Y - ImGui.GetStyle().FramePadding.Y);
         }

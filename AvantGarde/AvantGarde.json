@@ -1,10 +1,10 @@
 {
     "Author": "NeNeppie",
     "Name": "Avant-Garde",
-    "Punchline": "Displays a list of valid gear pieces beside hints in the Fashion Report minigame.",
-    "Description": "This plugin is a crowdsourced project, aiming to provide a comprehensive list for all hint categories.\nSee the github page for information on how you can contribute.",
+    "Punchline": "在潮流王小遊戲的提示旁顯示符合條件的裝備清單。",
+    "Description": "本插件為社群共同維護的專案，目標是為所有提示分類提供完整的裝備清單。\n如需了解如何參與貢獻，請參閱 GitHub 頁面。",
     "InternalName": "AvantGarde",
-    "RepoUrl": "https://github.com/NeNeppie/AvantGarde",
+    "RepoUrl": "https://github.com/Lother/AvantGarde",
     "Tags": ["Fashion report", "Glamour", "Gold saucer"],
     "CategoryTags": ["Utility", "UI"]
 }
