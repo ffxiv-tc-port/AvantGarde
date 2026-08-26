@@ -51,8 +51,17 @@ public static class ItemPopupWindow
         if (ImGui.Selectable("Try On".Loc()))
             AgentTryon.TryOn(0, item.RowId);
 
+        // 🔴 ItemFinderModule.Instance() 是 CS 裡的**手寫**包裝
+        //    （`uiModule == null ? null : uiModule->GetItemFinderModule()`），不是產生器的
+        //    [StaticAddress] —— 它會合法回 null（UIModule 還沒建好時）。
+        //    SearchForItem 是原生成員函式，對 null 呼叫是攔不到的 AVE
+        //    （corrupted-state exception，try/catch 無效）。取不到就當這次點擊沒發生。
         if (ImGui.Selectable("Search Item".Loc()))
-            ItemFinderModule.Instance()->SearchForItem(item.RowId, true);
+        {
+            var itemFinderModule = ItemFinderModule.Instance();
+            if (itemFinderModule != null)
+                itemFinderModule->SearchForItem(item.RowId, true);
+        }
 
         if (ImGui.Selectable("Link".Loc()))
             LinkItem(item);
@@ -110,7 +119,30 @@ public static class ItemPopupWindow
 
     private static unsafe void LinkItem(Item item)
     {
-        var agentChatLog = AgentChatLog.Instance();
+        // 🔴 AgentChatLog.Instance() 由 [Agent(AgentId.ChatLog)] 產生:內部鏈
+        //    AgentModule -> UIModule -> Framework,任一層回 null 整條就回 null(登入前、
+        //    切場景、登出後都是常態),而底層 [StaticAddress]/[MemberFunction] 特徵碼失配時
+        //    改為擲 InvalidOperationException——兩種失效模式並存,只擋一種等於假防護。
+        //    裸解參考 null 原生指標是 AccessViolationException,在 .NET Core 屬
+        //    corrupted-state exception,try/catch 攔不到 ⇒ 只能事前判空。
+        //    這裡由 UI 點擊觸發(低頻),判空後寫 Information 讓使用者回報得出來。
+        AgentChatLog* agentChatLog;
+        try
+        {
+            agentChatLog = AgentChatLog.Instance();
+        }
+        catch (System.Exception e)
+        {
+            Service.PluginLog.Information(
+                $"[AvantGarde] 取得 AgentChatLog 失敗(特徵碼可能失配),道具連結未插入:{e.Message}");
+            return;
+        }
+
+        if (agentChatLog == null)
+        {
+            Service.PluginLog.Information("[AvantGarde] AgentChatLog 尚未就緒,道具連結未插入。");
+            return;
+        }
 
         agentChatLog->LinkedItem.ItemId = item.RowId;
         agentChatLog->LinkedItem.Quantity = 1;
