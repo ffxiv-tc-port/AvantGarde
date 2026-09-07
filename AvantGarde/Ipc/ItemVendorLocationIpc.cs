@@ -21,10 +21,13 @@ public static class ItemVendorLocationIpc
 
     /// <summary>
     /// Returns true if ItemVendorLocation has any known source for this item (a vendor,
-    /// an achievement, a quest reward, etc.). <paramref name="vendors"/> is only populated
-    /// with entries that have a resolvable map location.
+    /// an achievement, a quest reward, etc.).
     /// </summary>
-    public static bool TryGetSource(uint itemId, out HashSet<(uint npcId, uint territory, (float x, float y))> vendors)
+    /// <param name="filterNoLocation">
+    /// true（預設，維持既有呼叫端的行為）＝只回有地圖位置的商人；
+    /// false ＝連「知道是誰賣的、但不知道他站在哪」的也回來，那種項目的 territory 與座標是 0。
+    /// </param>
+    public static bool TryGetSource(uint itemId, out HashSet<(uint npcId, uint territory, (float x, float y))> vendors, bool filterNoLocation = true)
     {
         vendors = [];
         if (!IsAvailable) return false;
@@ -32,7 +35,7 @@ public static class ItemVendorLocationIpc
         try
         {
             EnsureSubscribed();
-            var result = _getItemVendors?.InvokeFunc(itemId, true);
+            var result = _getItemVendors?.InvokeFunc(itemId, filterNoLocation);
             if (result is null) return false;
 
             vendors = result;
