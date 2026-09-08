@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface;
 using Dalamud.Interface.Textures;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
@@ -67,6 +68,21 @@ public class SlotWindow
         }
 
         ImGui.Text($"Avant-Garde: {_slot.GetDescription()}");
+
+        // 標題列右端的齒輪＝設定的第二個入口（第一個是插件安裝器裡的齒輪）。
+        // ⚠️ 圖示字型下的寬度要在 PushFont 之後才量得準，否則按鈕會被推出視窗右緣。
+        //    SmallButton 的水平內距是 FramePadding.X * 2（垂直是 0）。
+        ImGui.PushFont(UiBuilder.IconFont);
+        var cogWidth = ImGui.CalcTextSize(FontAwesomeIcon.Cog.ToIconString()).X + (ImGui.GetStyle().FramePadding.X * 2f);
+        ImGui.PopFont();
+
+        ImGui.SameLine();
+        ImGui.SetCursorPosX(ImGui.GetWindowWidth() - cogWidth - ImGui.GetStyle().WindowPadding.X);
+        if (GuiUtilities.IconButton(FontAwesomeIcon.Cog, default, "Settings".Loc(), small: true))
+        {
+            Service.ConfigWindow.IsOpen = true;
+        }
+
         ImGui.Separator();
 
         if (!_itemsFiltered.Any())
@@ -188,7 +204,9 @@ public class SlotWindow
         //    那不是錯誤，所以這裡不彈訊息，原因寫在 log（Information）。
         if (ImGui.SmallButton($"{goLabel}##avantgarde-goto-{item.RowId}"))
         {
-            LifestreamIpc.TryGoToMapPoint(hint.TerritoryId, hint.WorldX, hint.WorldZ, fly: true);
+            // 飛行旗標是使用者設定（預設 true＝這個功能上線時的行為）。
+            // 這是整個外掛裡唯一一個傳飛行旗標的地方。
+            LifestreamIpc.TryGoToMapPoint(hint.TerritoryId, hint.WorldX, hint.WorldZ, Service.Config.FlyToVendor);
         }
         if (ImGui.IsItemHovered())
         {
