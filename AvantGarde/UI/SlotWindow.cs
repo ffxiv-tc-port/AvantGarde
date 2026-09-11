@@ -211,7 +211,11 @@ public class SlotWindow
         if (ImGui.IsItemHovered())
         {
             using var tooltip = ImRaii.Tooltip();
-            ImGui.TextUnformatted("Ask Lifestream to take you there (map ??, ??).".Loc($"{hint.MapX:F1}", $"{hint.MapY:F1}"));
+            // 🔴 算不出地圖座標時不要印 (0.0, 0.0)——那會被讀成「商人在地圖左上角」。
+            //    前往本身照樣可以按：世界座標與地圖座標是兩條獨立的資料。
+            ImGui.TextUnformatted(hint.MapCoordinatesKnown
+                ? "Ask Lifestream to take you there (map ??, ??).".Loc($"{hint.MapX:F1}", $"{hint.MapY:F1}")
+                : "Ask Lifestream to take you there.".Loc());
         }
     }
 
@@ -259,10 +263,17 @@ public class SlotWindow
                     ? "NPC: ?? @ ??".Loc(vendorName, hint.PlaceName)
                     : "NPC: ??".Loc(vendorName));
 
-                if (hint.TerritoryId != 0)
+                // 店名可能是兩行（上層選單名＋店名），所以只放 tooltip 不放列上。
+                if (hint.ShopName is not null)
+                    lines.Add("Shop: ??".Loc(hint.ShopName));
+
+                if (hint.TerritoryId == 0)
+                    lines.Add("Location unknown.".Loc());
+                else if (hint.MapCoordinatesKnown)
                     lines.Add($"X: {hint.MapX:F1}, Y: {hint.MapY:F1}");
                 else
-                    lines.Add("Location unknown.".Loc());
+                    // 🔴「不知道」本身要看得見。直接寫 0 會誤導。
+                    lines.Add("Map coordinates unavailable.".Loc());
 
                 if (hint.AlsoOnMarket)
                     lines.Add("Also available on the market board.".Loc());
