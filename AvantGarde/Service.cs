@@ -17,6 +17,18 @@ internal sealed class Service
 
     public static DataManager DataManager { get; set; } = null!;
 
+    /// <summary>
+    /// 使用者設定。由 <see cref="Plugin"/> 的建構子在 <c>Create&lt;Service&gt;()</c> 之後立刻填上，
+    /// 所以任何繪製路徑走到這裡時它一定不是 null。
+    /// </summary>
+    public static Configuration Config { get; set; } = null!;
+
+    /// <summary>
+    /// 設定視窗。<see cref="UI.SlotWindow"/> 標題列的齒輪要靠它開窗，
+    /// 而那裡是靜態繪製路徑，所以擺在這裡當單一入口。
+    /// </summary>
+    public static UI.ConfigWindow ConfigWindow { get; set; } = null!;
+
     public Service()
     {
         DataManager = new DataManager();

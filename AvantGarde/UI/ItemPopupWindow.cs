@@ -1,11 +1,14 @@
 using System.Diagnostics;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using Lumina.Excel.Sheets;
 
+using AvantGarde.Data;
+using AvantGarde.Ipc;
 using AvantGarde.Utils;
 
 namespace AvantGarde.UI;
@@ -39,46 +42,101 @@ public static class ItemPopupWindow
         ImGui.TextUnformatted(item.Name.ExtractText());
         ImGui.Separator();
 
-        ImGui.Text($"Equippable by: {item.ClassJobCategory.Value.Name}");
+        ImGui.Text("Equippable by: ??".Loc(item.ClassJobCategory.Value.Name));
         ImGui.Spacing();
 
-        DrawGameIcon(SourceTypeIconQuestionMark, GuiUtilities.IconSize);
-        ImGui.SameLine();
-        ImGui.Text("Unknown Source!\nWork In Progress...");
+        DrawAcquisitionSource(item);
         ImGui.Spacing();
 
-        if (ImGui.Selectable("Try On"))
+        if (ImGui.Selectable("Try On".Loc()))
             AgentTryon.TryOn(0, item.RowId);
 
-        if (ImGui.Selectable("Search Item"))
-            ItemFinderModule.Instance()->SearchForItem(item.RowId, true);
+        // 🔴 ItemFinderModule.Instance() 會合法回 null（UIModule 還沒建好時）；
+        //    SearchForItem 是原生成員函式，對 null 呼叫是攔不到的 AVE。取不到就當這次點擊沒發生。
+        if (ImGui.Selectable("Search Item".Loc()))
+        {
+            var itemFinderModule = ItemFinderModule.Instance();
+            if (itemFinderModule != null)
+                itemFinderModule->SearchForItem(item.RowId, true);
+        }
 
-        if (ImGui.Selectable("Link"))
+        if (ImGui.Selectable("Link".Loc()))
             LinkItem(item);
 
-        if (ImGui.Selectable("Copy Name"))
+        if (ImGui.Selectable("Copy Name".Loc()))
             ImGui.SetClipboardText(item.Name.ExtractText());
 
-        if (ImGui.Selectable("Open in Garland Tools"))
+        if (ImGui.Selectable("Open in Garland Tools".Loc()))
             Process.Start(new ProcessStartInfo { FileName = $"https://garlandtools.org/db/#item/{item.RowId}", UseShellExecute = true });
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip($"https://garlandtools.org/db/#item/{item.RowId}");
 
-        // TODO: Possible item {EQUIPABLE GEAR} sources:
-        //      * Crafting
-        //      * Exchange (Special Shop - non-gil-currencies, raids tokens, tomestones, etc.)
-        //      * Gil Shops (Gridania/Uldah/Limsa etc.)
-        //      * Marketboard (e.g. old Starlight Celebration set)
-        //      * Desynth (e.g. rare fishing drops)
-        //      * Instance (Dungeon, Raid Coffers, AR, etc.) Drops
-        //      * Achievement Claim
-        //      * Retainer Ventures (Rare ARR gear exclusive to Ventures)
-        //      * Eureka & Bozja Lockboxes
+        if (ItemVendorLocationIpc.IsAvailable && ImGui.Selectable("Show in Item Vendor Location".Loc()))
+            ItemVendorLocationIpc.OpenResults(item.RowId);
+
+        // Not yet resolved by DrawAcquisitionSource (no known vendor/achievement/quest source
+        // via Item Vendor Location, and not craftable via Recipe): marketboard-only items
+        // (e.g. old Starlight Celebration sets), desynth drops, dungeon/raid/instance drops,
+        // and Eureka & Bozja lockboxes still fall back to "Unknown Source".
+    }
+
+    private static void DrawAcquisitionSource(Item item)
+    {
+        var source = AcquisitionSource.Resolve(item.RowId);
+        switch (source.Kind)
+        {
+            case AcquisitionSourceKind.Vendor:
+                DrawGameIcon(SourceTypeIconExchange, GuiUtilities.IconSize);
+                ImGui.SameLine();
+                ImGui.TextWrapped(source.ZoneName is not null
+                    ? "Available from a vendor near ??.".Loc(source.ZoneName)
+                    : "Available from a known source (achievement, quest, or shop).".Loc());
+
+                if (source.Location is { } location && ImGui.Selectable("Show location on map".Loc()))
+                {
+                    Service.GameGui.OpenMapWithMapLink(new MapLinkPayload(location.TerritoryId, location.MapId, location.X, location.Y));
+                }
+                break;
+
+            case AcquisitionSourceKind.Craftable:
+                DrawGameIcon(SourceTypeIconCrafting, GuiUtilities.IconSize);
+                ImGui.SameLine();
+                ImGui.TextWrapped(source.JobAbbreviation is not null
+                    ? "Craftable by ??.".Loc(source.JobAbbreviation)
+                    : "Craftable.".Loc());
+                break;
+
+            default:
+                DrawGameIcon(SourceTypeIconQuestionMark, GuiUtilities.IconSize);
+                ImGui.SameLine();
+                ImGui.TextWrapped("Unknown Source!\nWork In Progress...".Loc());
+                break;
+        }
     }
 
     private static unsafe void LinkItem(Item item)
     {
-        var agentChatLog = AgentChatLog.Instance();
+        // 🔴 AgentChatLog.Instance() 有兩種失效模式:鏈上任一層回 null 就回 null(登入前、切場景、登出後都是常態),
+        //    特徵碼失配時則擲 InvalidOperationException——只擋一種等於假防護。
+        //    裸解參考 null 原生指標是 try/catch 攔不到的 AccessViolationException ⇒ 只能事前判空。
+        //    這裡由 UI 點擊觸發(低頻),判空後寫 Information 讓使用者回報得出來。
+        AgentChatLog* agentChatLog;
+        try
+        {
+            agentChatLog = AgentChatLog.Instance();
+        }
+        catch (System.Exception e)
+        {
+            Service.PluginLog.Information(
+                $"[AvantGarde] 取得 AgentChatLog 失敗(特徵碼可能失配),道具連結未插入:{e.Message}");
+            return;
+        }
+
+        if (agentChatLog == null)
+        {
+            Service.PluginLog.Information("[AvantGarde] AgentChatLog 尚未就緒,道具連結未插入。");
+            return;
+        }
 
         agentChatLog->LinkedItem.ItemId = item.RowId;
         agentChatLog->LinkedItem.Quantity = 1;
