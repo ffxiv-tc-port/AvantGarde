@@ -20,8 +20,17 @@ public unsafe class MainWindow
 
     private readonly SlotWindow SlotWindow = new();
 
+    // 不是連續幀被呼叫＝時尚品鑑視窗重新開啟；每次開啟期間略過格子的診斷最多記一次。
+    private int lastDrawFrame = -2;
+    private bool skipLogged;
+
     public void Draw(AtkUnitBase* addon)
     {
+        var frame = ImGui.GetFrameCount();
+        if (frame != this.lastDrawFrame + 1)
+            this.skipLogged = false;
+        this.lastDrawFrame = frame;
+
         var windowPos = new Vector2(addon->X, addon->Y);
         var windowSize = new Vector2(addon->RootNode->Width, addon->RootNode->Height) * addon->Scale;
         ImGuiHelpers.ForceNextWindowMainViewport();
@@ -41,11 +50,30 @@ public unsafe class MainWindow
             var atkValueIndex = 13 + ((int)slot * 11);
 
             var slotNode = addon->GetNodeById(slotNodeID);
+            if (slotNode == null)
+            {
+                this.LogSkipOnce(slot, $"node {slotNodeID} not found");
+                continue;
+            }
+
+            if (addon->AtkValues == null || atkValueIndex >= addon->AtkValuesCount)
+            {
+                this.LogSkipOnce(slot, $"AtkValuesCount={addon->AtkValuesCount}, need index {atkValueIndex}");
+                continue;
+            }
+
+            var value = addon->AtkValues + atkValueIndex;
+            var baseType = value->Type & FFXIVClientStructs.FFXIV.Component.GUI.ValueType.TypeMask;
+            if (baseType != FFXIVClientStructs.FFXIV.Component.GUI.ValueType.String || value->String.Value == null)
+            {
+                this.LogSkipOnce(slot, $"AtkValues[{atkValueIndex}] type={value->Type}, null={value->String.Value == null}");
+                continue;
+            }
 
             var buttonSize = slotNode->Height * addon->Scale * 0.8f;
             var buttonPos = this.GetButtonPosition(addon, slotNode, slot);
 
-            slotCategory = addon->AtkValues[atkValueIndex].String.ToString();
+            slotCategory = value->String.ToString();
             if (slotCategory == "") { continue; }
 
             ImGui.SetCursorPos(buttonPos);
@@ -79,6 +107,14 @@ public unsafe class MainWindow
         SlotWindow.Draw();
 
         ImGui.End();
+    }
+
+    private void LogSkipOnce(ItemSlot slot, string reason)
+    {
+        if (this.skipLogged)
+            return;
+        this.skipLogged = true;
+        Service.PluginLog.Information($"[FashionCheck] skipped slot {slot}: {reason} (logged once per window open)");
     }
 
     private Vector2 GetButtonPosition(AtkUnitBase* addon, AtkResNode* node, ItemSlot slot)
